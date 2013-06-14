@@ -1,0 +1,4 @@
+#!/bin/sh
+test -f ~/.sbtconfig && . ~/.sbtconfig
+exec java -Xmx1G -XX:PermSize=128m -XX:MaxPermSize=256m -XX:+UseConcMarkSweepGC -XX:+CMSClassUnloadingEnabled ${SBT_OPTS} -jar /usr/local/Cellar/sbt/0.11.3-2/libexec/sbt-launch.jar "$@"
+
