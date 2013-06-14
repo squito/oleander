@@ -9,7 +9,7 @@ object SparkBuild extends Build {
     scalaVersion := "2.10.2",
     organization := "com.imranrashid",
     scalacOptions := Seq("-deprecation", "-unchecked", "-optimize"),
-    unmanagedJars in Compile <<= baseDirectory map { base => (base / "lib" ** "*.jar").classpath },
+    unmanagedBase <<= baseDirectory { base => base / "unmanaged" },
     retrieveManaged := true,
     transitiveClassifiers in Scope.GlobalScope := Seq("sources"),
     publishTo <<= baseDirectory { base => Some(Resolver.file("Local", base / "target" / "maven" asFile)(Patterns(true, Resolver.mavenStyleBasePattern))) },
