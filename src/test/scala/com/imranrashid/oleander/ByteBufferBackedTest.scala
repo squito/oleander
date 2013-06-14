@@ -2,7 +2,7 @@ package com.imranrashid.oleander
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
-import java.nio.ByteBuffer
+import java.nio.{FloatBuffer, ByteBuffer}
 import ichi.bench.Thyme
 import java.util
 import java.util.Collections
@@ -28,17 +28,19 @@ class ByteBufferBackedTest extends FunSuite with ShouldMatchers with ProfileUtil
     val raw = new Array[Float](n)
     val wrapped = new SimpleWrappedFloatArray(n)
     val buf = new FloatArraySlice(ByteBuffer.allocate(n*4))
+    val arrBuf = new FloatArrayAsBuffer(n)
     (0 until n).foreach { idx =>
       raw(idx) = idx * 2.4f
       wrapped(idx) = idx * 2.4f
       buf(idx) = idx * 2.4f
+      arrBuf(idx) = idx * 2.4f
     }
-    (raw, wrapped, buf)
+    (raw, wrapped, buf, arrBuf)
   }
 
   testProfile("profile sequential"){th =>
     val n = 1e7.toInt
-    val (raw, wrapped, buf) = initArrays(n)
+    val (raw, wrapped, buf, arrBuf) = initArrays(n)
 
     val rawWarmed = th.Warm{
       var idx = 0
@@ -67,15 +69,25 @@ class ByteBufferBackedTest extends FunSuite with ShouldMatchers with ProfileUtil
       }
       sum
     }
+    val arrBufWarmed = th.Warm{
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += arrBuf(idx)
+        idx += 1
+      }
+      sum
+    }
 
     th.pbenchWarm(rawWarmed, title="raw arrays")
     th.pbenchWarm(wrappedWarm, title="wrapped arrays")
-    th.pbenchWarm(bufWarmed, title="float buffer")
+    th.pbenchWarm(bufWarmed, title="byte array in float buffer")
+    th.pbenchWarm(arrBufWarmed, title="float array in buffer")
   }
 
   testProfile("profile random") { th =>
     val n = 1e7.toInt
-    val (raw, wrapped, buf) = initArrays(n)
+    val (raw, wrapped, buf, arrBuf) = initArrays(n)
 
     import collection.JavaConverters._
     val order = new util.ArrayList[Int](n)
@@ -110,11 +122,21 @@ class ByteBufferBackedTest extends FunSuite with ShouldMatchers with ProfileUtil
       }
       sum
     }
+    val arrBufWarmed = th.Warm{
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += arrBuf(o2(idx))
+        idx += 1
+      }
+      sum
+    }
+
 
     th.pbenchWarm(rawWarmed, title="raw arrays")
     th.pbenchWarm(wrappedWarm, title="wrapped arrays")
-    th.pbenchWarm(bufWarmed, title="float buffer")
-
+    th.pbenchWarm(bufWarmed, title="byte array in float buffer")
+    th.pbenchWarm(arrBufWarmed, title="float array in float buffer")
   }
 
 }
@@ -124,4 +146,12 @@ class SimpleWrappedFloatArray(val size: Int) {
   val arr = new Array[Float](size)
   def apply(idx: Int): Float = arr(idx)
   def update(idx: Int, v: Float) {arr(idx) = v}
+}
+
+class FloatArrayAsBuffer(val size: Int) {
+  val arr = new Array[Float](size)
+  val buf = FloatBuffer.wrap(arr)
+  def apply(idx: Int): Float = buf.get(idx)
+  def update(idx: Int, v: Float) {buf.put(idx, v)}
+
 }
