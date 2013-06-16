@@ -16,12 +16,14 @@ class ByteBufferBackedTest extends FunSuite with ShouldMatchers with ProfileUtil
     bb1.limit(40)
     val arr1 = new FloatArraySlice(bb1)
     (0 until 10).foreach{idx =>arr1(idx) = idx * 1.5f}
+    arr1.length should be (10)
 
     bb.position(60)
     val bb2 = bb.slice()
-    bb2.limit(60 + 30 * 4)
+    bb2.limit(30 * 4)
     val arr2 = new FloatArraySlice(bb2)
     (0 until 30).foreach{idx => arr2(idx) = idx * 2.9f}
+    arr2.length should be (30)
   }
 
   def initArrays(n: Int) = {
