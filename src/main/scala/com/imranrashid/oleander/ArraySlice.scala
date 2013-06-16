@@ -11,7 +11,7 @@ import java.nio.ByteBuffer
  * This expects to read floats from the entire given byte buffer.  If you want to read from part of a byte buffer,
  * first create a slice of the byte buffer covering the relevant range.
  */
-class FloatArraySlice(var bb: ByteBuffer) extends ByteBufferBacked {
+class FloatArraySlice(var bb: ByteBuffer) extends ByteBufferBacked with Arrayish[Float] with FloatArray {
   var floatBuffer = bb.asFloatBuffer()
   override def initFrom(otherBB: ByteBuffer) {this.bb = otherBB}
   override def asByteBuffer(): ByteBuffer = {bb}
