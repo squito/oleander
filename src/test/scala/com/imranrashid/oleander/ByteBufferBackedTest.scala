@@ -424,10 +424,103 @@ object ByteBufferBackedTest {
     println("result = " + th.pbenchWarm(bufImpl, title="byte array wrapped in FloatBuffer"))
   }
 
+
+
+  trait ArraySummer[-T] {
+    def sum(t: T): Float
+  }
+
+  object SpecificSummers {
+    implicit object SimpleWrappedFloatArraySummer extends ArraySummer[SimpleWrappedFloatArray] {
+      def sum(arr: SimpleWrappedFloatArray): Float = {
+        var idx = 0
+        var sum = 0f
+        while(idx < arr.length) {
+          sum += arr(idx)
+          idx += 1
+        }
+        sum
+      }
+    }
+
+    implicit object FloatArrayAsBufferSummer extends ArraySummer[FloatArrayAsBuffer] {
+      def sum(arr: FloatArrayAsBuffer): Float = {
+        var idx = 0
+        var sum = 0f
+        while(idx < arr.length) {
+          sum += arr(idx)
+          idx += 1
+        }
+        sum
+      }
+    }
+
+    implicit object FloatArraySliceSummer extends ArraySummer[FloatArraySlice] {
+      def sum(arr: FloatArraySlice): Float = {
+        var idx = 0
+        var sum = 0f
+        while(idx < arr.length) {
+          sum += arr(idx)
+          idx += 1
+        }
+        sum
+      }
+    }
+  }
+
+  object GenericSummers {
+    implicit object ArrayLikeSummer extends ArraySummer[ArrayLike[Float]] {
+      def sum(arr: ArrayLike[Float]): Float = {
+        var idx = 0
+        var sum = 0f
+        while(idx < arr.length) {
+          sum += arr(idx)
+          idx += 1
+        }
+        sum
+      }
+    }
+
+  }
+
+
+  def typeClassProfile(th:Thyme) {
+    val n = 1e7.toInt
+    val (_, wrapped, buf, arrBuf) = initArrays(n)
+
+    {
+      import GenericSummers._
+      def sum[A](arr: A)(implicit summer: ArraySummer[A]): Float = summer.sum(arr)
+      println("*** generic summer type class ***")
+      val wrappedSum = th.Warm(sum(wrapped))
+      val arrBufSum = th.Warm(sum(arrBuf))
+      val bufSum = th.Warm(sum(buf))
+      println("result = " + th.pbenchWarm(wrappedSum, title="wrapped array w/ generic summer"))
+      println("result = " + th.pbenchWarm(arrBufSum, title="float array wrapped in FloatBuffer w/ generic summer"))
+      println("result = " + th.pbenchWarm(bufSum, title="byte array wrapped in FloatBuffer w/ generic summer"))
+    }
+
+
+    {
+      import SpecificSummers._
+      def sum[A](arr: A)(implicit summer: ArraySummer[A]): Float = summer.sum(arr)
+      println("*** explicit summer type class ***")
+      val wrappedSum = th.Warm(sum(wrapped))
+      val arrBufSum = th.Warm(sum(arrBuf))
+      val bufSum = th.Warm(sum(buf))
+      println("result = " + th.pbenchWarm(wrappedSum, title="wrapped array w/ specific summer"))
+      println("result = " + th.pbenchWarm(arrBufSum, title="float array wrapped in FloatBuffer w/ specific summer"))
+      println("result = " + th.pbenchWarm(bufSum, title="byte array wrapped in FloatBuffer w/ specific summer"))
+    }
+
+
+  }
+
   def main(args: Array[String]) {
     val th = ProfileUtils.thyme
     basicProfile(th)
     alternateInterfaceProfile(th)
+    typeClassProfile(th)
 //    interfaceProfile(ProfileUtils.thyme)
 //    interfaceProfileWarm(ProfileUtils.thyme)
 //      interfaceProfileBenchOff(ProfileUtils.thyme)
@@ -442,6 +535,8 @@ object ByteBufferBackedTest {
   /*
   javap -classpath target/scala-2.10.2/test-classes -c com.imranrashid.oleander.ByteBufferBackedTest | more
   ~/scala/scala-2.10.2/bin/scala -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.ByteBufferBackedTest
+  or
+  ~/scala/scala-2.10.2/bin/scala -J-XX:+PrintCompilation -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.ByteBufferBackedTest
   or perhaps
   ~/scala/scala-2.10.2/bin/scala -J-XX:+UnlockDiagnosticVMOptions -J-XX:+PrintInlining -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.ByteBufferBackedTest
    */
