@@ -109,6 +109,17 @@ object ByteBufferBackedTest {
     sum
   }
 
+  def sumArrayLike(arr: ArrayLike[Float]): Float = {
+    var idx = 0
+    var sum = 0f
+    while(idx < arr.length) {
+      sum += arr(idx)
+      idx += 1
+    }
+    sum
+  }
+
+
   def sumFloatBuffer(arr: FloatArraySlice): Float = {
     var idx = 0
     var sum = 0f
@@ -346,11 +357,80 @@ object ByteBufferBackedTest {
       }
       sum
     }, title="float buffer"))
+  }
 
+  def interfaceProfile(th: Thyme) {
+    val n = 1e7.toInt
+    val (_, wrapped, buf, arrBuf) = initArrays(n)
+    println("**** interface profile, first pass ****")
+    println("result = " + th.pbench(sumArrayLike(wrapped), title="wrapped array"))
+    println("result = " + th.pbench(sumArrayLike(arrBuf), title="float array wrapped in FloatBuffer"))
+    println("result = " + th.pbench(sumArrayLike(buf), title="byte array wrapped in FloatBuffer"))
+    println("**** interface profile, second pass ****")
+    println("result = " + th.pbench(sumArrayLike(wrapped), title="wrapped array"))
+    println("result = " + th.pbench(sumArrayLike(arrBuf), title="float array wrapped in FloatBuffer"))
+    println("result = " + th.pbench(sumArrayLike(buf), title="byte array wrapped in FloatBuffer"))
+    println()
+  }
+
+  def interfaceProfileWarm(th:Thyme) {
+    val n = 1e7.toInt
+    val (_, wrapped, buf, arrBuf) = initArrays(n)
+    val wrappedSumWarm = th.Warm(sumArrayLike(wrapped))
+    val arrBufSumWarm = th.Warm(sumArrayLike(arrBuf))
+    val bufSumWarm = th.Warm(sumArrayLike(buf))
+    println("result = " + th.pbenchWarm(wrappedSumWarm, title="wrapped array"))
+    println("result = " + th.pbenchWarm(arrBufSumWarm, title="float array wrapped in FloatBuffer"))
+    println("result = " + th.pbenchWarm(bufSumWarm, title="byte array wrapped in FloatBuffer"))
+  }
+
+  def interfaceProfileBenchOff(th: Thyme) {
+    val n = 1e7.toInt
+    val (_, wrapped, buf, arrBuf) = initArrays(n)
+    println("**** bench off, first pass ****")
+    println("result = " +
+      th.pbenchOff
+        (title="wrapped array vs byte buffer")
+        (sumArrayLike(arrBuf), ftitle="wrapped array")
+        (sumArrayLike(buf), htitle="byte array wrapped in FloatBuffer")
+    )
+
+    println("**** bench off, second pass ****")
+    println("result = " +
+      th.pbenchOff
+        (title="wrapped array vs byte buffer")
+        (sumArrayLike(arrBuf), ftitle="wrapped array")
+        (sumArrayLike(buf), htitle="byte array wrapped in FloatBuffer")
+    )
+  }
+
+  def alternateInterfaceProfile(th:Thyme) {
+    val n = 1e7.toInt
+    val (_, wrapped, buf, arrBuf) = initArrays(n)
+    println("*** sum in trait ***")
+    val wrappedTrait = th.Warm(wrapped.sumInTrait)
+    val arrBufTrait = th.Warm(arrBuf.sumInTrait)
+    val bufTrait = th.Warm(buf.sumInTrait)
+    println("result = " + th.pbenchWarm(wrappedTrait, title="wrapped array"))
+    println("result = " + th.pbenchWarm(arrBufTrait, title="float array wrapped in FloatBuffer"))
+    println("result = " + th.pbenchWarm(bufTrait, title="byte array wrapped in FloatBuffer"))
+
+    println("*** sum in impl ***")
+    val wrappedImpl = th.Warm(wrapped.sumInImpl)
+    val arrBufImpl = th.Warm(arrBuf.sumInImpl)
+    val bufImpl = th.Warm(buf.sumInImpl)
+    println("result = " + th.pbenchWarm(wrappedImpl, title="wrapped array"))
+    println("result = " + th.pbenchWarm(arrBufImpl, title="float array wrapped in FloatBuffer"))
+    println("result = " + th.pbenchWarm(bufImpl, title="byte array wrapped in FloatBuffer"))
   }
 
   def main(args: Array[String]) {
-    basicProfile(ProfileUtils.thyme)
+    val th = ProfileUtils.thyme
+    basicProfile(th)
+    alternateInterfaceProfile(th)
+//    interfaceProfile(ProfileUtils.thyme)
+//    interfaceProfileWarm(ProfileUtils.thyme)
+//      interfaceProfileBenchOff(ProfileUtils.thyme)
 //    println("**** buf sum Profile *****")
 //    bufSumProfile(ProfileUtils.thyme)
 //    println()
@@ -360,7 +440,7 @@ object ByteBufferBackedTest {
   }
 
   /*
-  javap -classpath target/scala-2.10.2/test-classes -c com.imranrashid.oleander.ByteBufferBackedTest$ | more
+  javap -classpath target/scala-2.10.2/test-classes -c com.imranrashid.oleander.ByteBufferBackedTest | more
   ~/scala/scala-2.10.2/bin/scala -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.ByteBufferBackedTest
   or perhaps
   ~/scala/scala-2.10.2/bin/scala -J-XX:+UnlockDiagnosticVMOptions -J-XX:+PrintInlining -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.ByteBufferBackedTest
@@ -372,6 +452,15 @@ class SimpleWrappedFloatArray(val length: Int) extends ArrayLike[Float] with Flo
   val arr = new Array[Float](length)
   def apply(idx: Int): Float = arr(idx)
   def update(idx: Int, v: Float) {arr(idx) = v}
+  def sumInImpl: Float = {
+    var idx = 0
+    var sum = 0f
+    while(idx < length) {
+      sum += this(idx)
+      idx += 1
+    }
+    sum
+  }
 }
 
 class FloatArrayAsBuffer(val length: Int) extends ArrayLike[Float] with FloatArray {
@@ -379,5 +468,14 @@ class FloatArrayAsBuffer(val length: Int) extends ArrayLike[Float] with FloatArr
   val buf = FloatBuffer.wrap(arr)
   def apply(idx: Int): Float = buf.get(idx)
   def update(idx: Int, v: Float) {buf.put(idx, v)}
+  def sumInImpl: Float = {
+    var idx = 0
+    var sum = 0f
+    while(idx < length) {
+      sum += this(idx)
+      idx += 1
+    }
+    sum
+  }
 
 }

@@ -19,4 +19,16 @@ trait FloatArray {
   def update(idx: Int, value: Float)
   def length: Int
   def size: Int
+
+  def sumInTrait: Float = {
+    var idx = 0
+    var sum = 0f
+    while(idx < length) {
+      sum += this(idx)
+      idx += 1
+    }
+    sum
+  }
+
+  def sumInImpl: Float
 }
