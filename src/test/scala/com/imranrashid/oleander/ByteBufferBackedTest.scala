@@ -235,12 +235,12 @@ object ByteBufferBackedTest {
 
 
     check(th, wrappedWarm, title="wrapped arrays")
-    check(th, th.Warm(sumFloatArray(wrapped)), title="wrapped arrays via Arrayish")
+    check(th, th.Warm(sumFloatArray(wrapped)), title="wrapped arrays via FloatArray")
     check(th, bufWarmed, title="byte array in float buffer")
-    check(th, th.Warm(sumFloatArray(buf)), title="byte array in float buffer via Arrayish")
-    th.pbenchOffWarm(title="buf direct vs. via Arrayish")(bufWarmed, wtitle="buf direct")(th.Warm(sumFloatArray(buf)), vtitle = "sumFloatArray")
+    check(th, th.Warm(sumFloatArray(buf)), title="byte array in float buffer via FloatArray")
+    th.pbenchOffWarm(title="buf direct vs. via ArrayLike")(bufWarmed, wtitle="buf direct")(th.Warm(sumFloatArray(buf)), vtitle = "sumFloatArray")
     check(th, arrBufWarmed, title="float array in buffer")
-    check(th, th.Warm(sumFloatArray(arrBuf)), title="float array in buffer via Arrayish")
+    check(th, th.Warm(sumFloatArray(arrBuf)), title="float array in buffer via FloatArray")
     println()
 
 
@@ -254,10 +254,10 @@ object ByteBufferBackedTest {
       if (idx >= warmup)
         timeSum += (end - start)
     }
-    println("hand time of byte array in float buffer via arrayish = " + (timeSum / (nItrs * 1e6)) + " ms")
+    println("hand time of byte array in float buffer via FloatArray = " + (timeSum / (nItrs * 1e6)) + " ms")
 
 
-    check(th, th.Warm(sumFloatArray(wrapped)), title="wrapped arrays via Arrayish")
+    check(th, th.Warm(sumFloatArray(wrapped)), title="wrapped arrays via FloatArray")
 
     timeSum = 0l
     (0 until nItrs).foreach{ _ =>
@@ -368,13 +368,13 @@ object ByteBufferBackedTest {
 }
 
 
-class SimpleWrappedFloatArray(val length: Int) extends Arrayish[Float] with FloatArray {
+class SimpleWrappedFloatArray(val length: Int) extends ArrayLike[Float] with FloatArray {
   val arr = new Array[Float](length)
   def apply(idx: Int): Float = arr(idx)
   def update(idx: Int, v: Float) {arr(idx) = v}
 }
 
-class FloatArrayAsBuffer(val length: Int) extends Arrayish[Float] with FloatArray {
+class FloatArrayAsBuffer(val length: Int) extends ArrayLike[Float] with FloatArray {
   val arr = new Array[Float](length)
   val buf = FloatBuffer.wrap(arr)
   def apply(idx: Int): Float = buf.get(idx)
