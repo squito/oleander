@@ -99,7 +99,7 @@ object ByteBufferBackedTest {
     (raw, wrapped, buf, arrBuf)
   }
 
-  def sumArrayish(arr: FloatArray): Float = {
+  def sumFloatArray(arr: FloatArray): Float = {
     var idx = 0
     var sum = 0f
     while(idx < arr.length) {
@@ -107,6 +107,54 @@ object ByteBufferBackedTest {
       idx += 1
     }
     sum
+  }
+
+  def sumFloatBuffer(arr: FloatArraySlice): Float = {
+    var idx = 0
+    var sum = 0f
+    while(idx < arr.size) {
+      sum += arr(idx)
+      idx += 1
+    }
+    sum
+  }
+
+  def bufSumProfile(th: Thyme) {
+    val n = 1e7.toInt
+    val (_, _ , buf, _) = initArrays(n)
+
+    val nItrs = 100
+    var totalSum = 0f
+    var totalTime = 0l
+    (0 until nItrs).foreach{_ =>
+      val startTime = System.nanoTime()
+      totalSum += sumFloatBuffer(buf)
+      totalTime += System.nanoTime() - startTime
+    }
+    println("ignore result = " + totalSum)
+    println("hand time of sumFloatBuffer = " + (totalTime / (nItrs * 1e6) + " ms"))
+
+    totalTime = 0
+    (0 until nItrs).foreach{_ =>
+      val startTime = System.nanoTime()
+      totalSum += sumFloatArray(buf)
+      totalTime += System.nanoTime() - startTime
+    }
+    println("ignore result = " + totalSum)
+    println("hand time of sumFloatArray = " + (totalTime / (nItrs * 1e6) + " ms"))
+
+    totalTime = 0
+    (0 until nItrs).foreach{_ =>
+      val startTime = System.nanoTime()
+      var idx = 0
+      while (idx < n) {
+        totalSum += buf(idx)
+        idx += 1
+      }
+      totalTime += System.nanoTime() - startTime
+    }
+    println("ignore result = " + totalSum)
+    println("hand time of while loop = " + (totalTime / (nItrs * 1e6) + " ms"))
   }
 
   def sequentialProfile(th: Thyme) {
@@ -154,24 +202,63 @@ object ByteBufferBackedTest {
     }
 
     val exp = raw.sum
+    println("result = " + th.pbench({
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += raw(idx)
+        idx += 1
+      }
+      sum
+    }, title="raw arrays"))
     check(th, rawWarmed, title="raw arrays")
+    val rawBB = buf.bb
+    println("result = " + th.pbench({
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += rawBB.getFloat(idx * 4)
+        idx += 1
+      }
+      sum
+    }, title="byte buffer"))
+    val rawFloatBuf = buf.floatBuffer
+    println("result = " + th.pbench({
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += rawFloatBuf.get(idx)
+        idx += 1
+      }
+      sum
+    }, title="float buffer"))
+
+
     check(th, wrappedWarm, title="wrapped arrays")
-    check(th, th.Warm(sumArrayish(wrapped)), title="wrapped arrays via Arrayish")
+    check(th, th.Warm(sumFloatArray(wrapped)), title="wrapped arrays via Arrayish")
     check(th, bufWarmed, title="byte array in float buffer")
-    check(th, th.Warm(sumArrayish(buf)), title="byte array in float buffer via Arrayish")
-    th.pbenchOffWarm(title="buf direct vs. via Arrayish")(bufWarmed, wtitle="buf direct")(th.Warm(sumArrayish(buf)), vtitle = "sumArrayish")
+    check(th, th.Warm(sumFloatArray(buf)), title="byte array in float buffer via Arrayish")
+    th.pbenchOffWarm(title="buf direct vs. via Arrayish")(bufWarmed, wtitle="buf direct")(th.Warm(sumFloatArray(buf)), vtitle = "sumFloatArray")
     check(th, arrBufWarmed, title="float array in buffer")
-    check(th, th.Warm(sumArrayish(arrBuf)), title="float array in buffer via Arrayish")
+    check(th, th.Warm(sumFloatArray(arrBuf)), title="float array in buffer via Arrayish")
+    println()
 
 
     var timeSum = 0l
-    val nItrs = 20
-    (0 until nItrs).foreach{ _ =>
+    val warmup = 100
+    val nItrs = 200
+    (0 until (nItrs + warmup)).foreach{ idx =>
       val start = System.nanoTime()
-      sumArrayish(buf)
-      timeSum += (System.nanoTime() - start)
+      sumFloatArray(buf)
+      val end = System.nanoTime()
+      if (idx >= warmup)
+        timeSum += (end - start)
     }
     println("hand time of byte array in float buffer via arrayish = " + (timeSum / (nItrs * 1e6)) + " ms")
+
+
+    check(th, th.Warm(sumFloatArray(wrapped)), title="wrapped arrays via Arrayish")
+
     timeSum = 0l
     (0 until nItrs).foreach{ _ =>
       val start = System.nanoTime()
@@ -179,12 +266,37 @@ object ByteBufferBackedTest {
       timeSum += (System.nanoTime() - start)
     }
     println("hand time of byte array in float buffer via while  = " + (timeSum / (nItrs * 1e6)) + " ms")
+    timeSum = 0l
+    var totalSum = 0f
+    (0 until nItrs).foreach{ _ =>
+      val start = System.nanoTime()
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += raw(idx)
+        idx += 1
+      }
+      totalSum += sum
+      timeSum += (System.nanoTime() - start)
+    }
+    println("hand time of array while = " + (timeSum / (nItrs * 1e6)) + " ms")
+    println("ignore result = " + totalSum)
+    timeSum = 0l
+    (0 until nItrs).foreach{ idx =>
+      raw(idx) = 34
+      val start = System.nanoTime()
+      totalSum += raw.sum
+      timeSum += System.nanoTime() - start
+    }
+    println("hand time of array sum = " + (timeSum / (nItrs * 1e6)) + " ms")
+    println("ignore result = " + totalSum)
+    println()
     println("pclockN")
-    th.pclockN(sumArrayish(buf))(m = 1, n = 20, op = th.uncertainPicker)
+    th.pclockN(sumFloatArray(buf))(m = 1, n = 20, op = th.uncertainPicker)
 
 
     println("ptimeN")
-    th.ptimeN(sumArrayish(buf))(m = 1, n = 20, op = th.uncertainPicker, title="buf arrayish")
+    th.ptimeN(sumFloatArray(buf))(m = 1, n = 20, op = th.uncertainPicker, title="buf arrayish")
     th.ptimeN(bufWarmed.apply())(m = 1, n = 20, op = th.uncertainPicker, title="buf while")
 
     println("timeMany")
@@ -202,8 +314,49 @@ object ByteBufferBackedTest {
     println("result = " + th.pbenchWarm(warmed.asInstanceOf[th.Warm[Float]], title=title)) //should be (exp plusOrMinus eps)
   }
 
+  def basicProfile(th: Thyme) {
+    val n = 1e7.toInt
+    val (rawArray, _, buf, _) = initArrays(n)
+    println("result = " + th.pbench({
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += rawArray(idx)
+        idx += 1
+      }
+      sum
+    }, title="raw arrays"))
+    val rawBB = buf.bb
+    println("result = " + th.pbench({
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += rawBB.getFloat(idx * 4)
+        idx += 1
+      }
+      sum
+    }, title="byte buffer"))
+    val rawFloatBuf = buf.floatBuffer
+    println("result = " + th.pbench({
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += rawFloatBuf.get(idx)
+        idx += 1
+      }
+      sum
+    }, title="float buffer"))
+
+  }
+
   def main(args: Array[String]) {
-    sequentialProfile(ProfileUtils.thyme)
+    basicProfile(ProfileUtils.thyme)
+//    println("**** buf sum Profile *****")
+//    bufSumProfile(ProfileUtils.thyme)
+//    println()
+//    println()
+//    println("**** seq profile *****")
+//    sequentialProfile(ProfileUtils.thyme)
   }
 
   /*
