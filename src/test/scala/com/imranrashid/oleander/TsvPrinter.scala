@@ -31,8 +31,8 @@ class TsvPrinter(val th: Thyme, val file: File) {
   }
 
   def showRCommand = println(
-    """read.table(""" + file.getAbsolutePath +
-      """, sep="\t",h=T)
+    """data <- read.table("""" + file.getAbsolutePath +
+      """", sep="\t",h=T)
         |# you might want to reorder the plot with something like:
         |# data$title = factor(data$title, levels = c(<desired order>), ordered=T)
         |boxplot(runtime ~ title, data, ylab="seconds")
