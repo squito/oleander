@@ -9,26 +9,3 @@ trait ArrayLike[@specialized T] {
   def length: Int
   def size: Int = length
 }
-
-/**
- * just for testing / profiling -- delete this eventually
- */
-@deprecated(message="dont use", since="always")
-trait FloatArray {
-  def apply(idx: Int) : Float
-  def update(idx: Int, value: Float)
-  def length: Int
-  def size: Int
-
-  def sumInTrait: Float = {
-    var idx = 0
-    var sum = 0f
-    while(idx < length) {
-      sum += this(idx)
-      idx += 1
-    }
-    sum
-  }
-
-  def sumInImpl: Float
-}
