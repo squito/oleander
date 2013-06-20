@@ -5,22 +5,22 @@ import org.scalatest.matchers.ShouldMatchers
 import java.nio.{FloatBuffer, ByteBuffer}
 import ichi.bench.Thyme
 
-class ByteBufferBackedTest extends FunSuite with ShouldMatchers with ProfileUtils {
-  import ByteBufferBackedTest._
+class FloatArrayBufferTest extends FunSuite with ShouldMatchers with ProfileUtils {
+  import FloatArrayBufferTest._
 
   test("simple arrays"){
     //make a big byte buffer, and chop it into some chunks
     val bb = ByteBuffer.allocate(400)
     val bb1 = bb.slice()
     bb1.limit(40)
-    val arr1 = new FloatArraySlice(bb1)
+    val arr1 = new FloatArrayBuffer(bb1)
     (0 until 10).foreach{idx =>arr1(idx) = idx * 1.5f}
     arr1.length should be (10)
 
     bb.position(60)
     val bb2 = bb.slice()
     bb2.limit(30 * 4)
-    val arr2 = new FloatArraySlice(bb2)
+    val arr2 = new FloatArrayBuffer(bb2)
     (0 until 30).foreach{idx => arr2(idx) = idx * 2.9f}
     arr2.length should be (30)
   }
@@ -84,11 +84,11 @@ class ByteBufferBackedTest extends FunSuite with ShouldMatchers with ProfileUtil
 
 }
 
-object ByteBufferBackedTest {
+object FloatArrayBufferTest {
   def initArrays(n: Int) = {
     val raw = new Array[Float](n)
     val wrapped = new SimpleWrappedFloatArray(n)
-    val buf = new FloatArraySlice(ByteBuffer.allocate(n*4))
+    val buf = new FloatArrayBuffer(ByteBuffer.allocate(n*4))
     val arrBuf = new FloatArrayAsBuffer(n)
     (0 until n).foreach { idx =>
       raw(idx) = idx * 2.4f
@@ -140,12 +140,12 @@ object ByteBufferBackedTest {
   }
 
   /*
-  javap -classpath target/scala-2.10.2/test-classes -c com.imranrashid.oleander.ByteBufferBackedTest | more
-  ~/scala/scala-2.10.2/bin/scala -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.ByteBufferBackedTest
+  javap -classpath target/scala-2.10.2/test-classes -c com.imranrashid.oleander.FloatArrayBufferTest | more
+  ~/scala/scala-2.10.2/bin/scala -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.FloatArrayBufferTest
   or
-  ~/scala/scala-2.10.2/bin/scala -J-XX:+PrintCompilation -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.ByteBufferBackedTest
+  ~/scala/scala-2.10.2/bin/scala -J-XX:+PrintCompilation -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.FloatArrayBufferTest
   or perhaps
-  ~/scala/scala-2.10.2/bin/scala -J-XX:+UnlockDiagnosticVMOptions -J-XX:+PrintInlining -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.ByteBufferBackedTest
+  ~/scala/scala-2.10.2/bin/scala -J-XX:+UnlockDiagnosticVMOptions -J-XX:+PrintInlining -classpath target/scala-2.10.2/classes/:target/scala-2.10.2/test-classes/:unmanaged/Thyme.jar:lib_managed/jars/org.scalatest/scalatest_2.10/scalatest_2.10-1.9.1.jar com.imranrashid.oleander.FloatArrayBufferTest
    */
 }
 
