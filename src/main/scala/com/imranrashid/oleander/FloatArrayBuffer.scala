@@ -18,14 +18,4 @@ class FloatArrayBuffer(var bb: ByteBuffer) extends ByteBufferBacked with ArrayLi
   def apply(idx: Int): Float = floatBuffer.get(idx)
   def update(idx: Int, v: Float) {floatBuffer.put(idx, v)}
   def length = floatBuffer.limit
-
-  def sumInImpl: Float = {
-    var idx = 0
-    var sum = 0f
-    while(idx < length) {
-      sum += this(idx)
-      idx += 1
-    }
-    sum
-  }
 }

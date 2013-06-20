@@ -154,15 +154,6 @@ class SimpleWrappedFloatArray(val length: Int) extends ArrayLike[Float] {
   val arr = new Array[Float](length)
   def apply(idx: Int): Float = arr(idx)
   def update(idx: Int, v: Float) {arr(idx) = v}
-  def sumInImpl: Float = {
-    var idx = 0
-    var sum = 0f
-    while(idx < length) {
-      sum += this(idx)
-      idx += 1
-    }
-    sum
-  }
 }
 
 class FloatArrayAsBuffer(val length: Int) extends ArrayLike[Float] {
@@ -170,14 +161,5 @@ class FloatArrayAsBuffer(val length: Int) extends ArrayLike[Float] {
   val buf = FloatBuffer.wrap(arr)
   def apply(idx: Int): Float = buf.get(idx)
   def update(idx: Int, v: Float) {buf.put(idx, v)}
-  def sumInImpl: Float = {
-    var idx = 0
-    var sum = 0f
-    while(idx < length) {
-      sum += this(idx)
-      idx += 1
-    }
-    sum
-  }
 
 }
