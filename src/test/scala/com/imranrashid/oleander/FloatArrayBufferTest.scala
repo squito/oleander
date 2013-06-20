@@ -4,6 +4,7 @@ import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
 import java.nio.{FloatBuffer, ByteBuffer}
 import ichi.bench.Thyme
+import java.io.File
 
 class FloatArrayBufferTest extends FunSuite with ShouldMatchers with ProfileUtils {
   import FloatArrayBufferTest._
@@ -102,9 +103,10 @@ object FloatArrayBufferTest {
   def sequentialProfile(th: Thyme) {
     val n = 1e7.toInt
     val (rawArray, _, buf, _) = initArrays(n)
+    val tsv = new TsvPrinter(th, new File("float_buffer_profile.tsv"))
     //to get accurate timing here, you CANNOT wrap the implementations up in a common trait, b/c then you
     // add the cost of dynamic dispatch, which dwarfs the floating point operations
-    println("result = " + th.pbench({
+    println("result = " + tsv.tsvBench({
       var idx = 0
       var sum = 0f
       while(idx < n) {
@@ -112,9 +114,9 @@ object FloatArrayBufferTest {
         idx += 1
       }
       sum
-    }, title="raw arrays"))
+    }, title="float[]"))
     val rawBB = buf.bb
-    println("result = " + th.pbench({
+    println("result = " + tsv.tsvBench({
       var idx = 0
       var sum = 0f
       while(idx < n) {
@@ -122,9 +124,9 @@ object FloatArrayBufferTest {
         idx += 1
       }
       sum
-    }, title="byte buffer"))
+    }, title="ByteBuffer.getFloat"))
     val rawFloatBuf = buf.floatBuffer
-    println("result = " + th.pbench({
+    println("result = " + tsv.tsvBench({
       var idx = 0
       var sum = 0f
       while(idx < n) {
@@ -132,7 +134,10 @@ object FloatArrayBufferTest {
         idx += 1
       }
       sum
-    }, title="float buffer"))
+    }, title="byte[] in FloatBuffer"))
+
+    tsv.close()
+    tsv.showRCommand
   }
   def main(args: Array[String]) {
     val th = ProfileUtils.thyme
