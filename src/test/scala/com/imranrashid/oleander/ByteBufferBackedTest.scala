@@ -2,7 +2,7 @@ package com.imranrashid.oleander
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
-import java.nio.{FloatBuffer, ByteBuffer}
+import java.nio.{FloatBuffer, ByteBuffer, ByteOrder}
 import ichi.bench.Thyme
 
 class ByteBufferBackedTest extends FunSuite with ShouldMatchers with ProfileUtils {
@@ -10,7 +10,7 @@ class ByteBufferBackedTest extends FunSuite with ShouldMatchers with ProfileUtil
 
   test("simple arrays"){
     //make a big byte buffer, and chop it into some chunks
-    val bb = ByteBuffer.allocate(400)
+    val bb = ByteBuffer.allocateDirect(400).order(ByteOrder.nativeOrder)
     val bb1 = bb.slice()
     bb1.limit(40)
     val arr1 = new FloatArraySlice(bb1)
@@ -88,7 +88,8 @@ object ByteBufferBackedTest {
   def initArrays(n: Int) = {
     val raw = new Array[Float](n)
     val wrapped = new SimpleWrappedFloatArray(n)
-    val buf = new FloatArraySlice(ByteBuffer.allocate(n*4))
+    val buf = new FloatArraySlice(ByteBuffer.allocateDirect(n*4).order(ByteOrder.nativeOrder))
+
     val arrBuf = new FloatArrayAsBuffer(n)
     (0 until n).foreach { idx =>
       raw(idx) = idx * 2.4f
