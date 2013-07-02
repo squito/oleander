@@ -35,7 +35,8 @@ class TsvPrinter(val th: Thyme, val file: File) {
       """", sep="\t",h=T)
         |# you might want to reorder the plot with something like:
         |# data$title = factor(data$title, levels = c(<desired order>), ordered=T)
-        |boxplot(runtime ~ title, data, ylab="seconds")
+        |boxplot(runtime ~ title, data, ylab="seconds", ylim=c(0,max(data$runtime)))
+        |grid()
       """.stripMargin
   )
 }
