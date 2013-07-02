@@ -2,7 +2,7 @@ package com.imranrashid.oleander
 
 import org.scalatest.FunSuite
 import org.scalatest.matchers.ShouldMatchers
-import java.nio.{FloatBuffer, ByteBuffer}
+import java.nio.{ByteOrder, FloatBuffer, ByteBuffer}
 import ichi.bench.Thyme
 import java.io.File
 
@@ -90,19 +90,21 @@ object FloatArrayBufferTest {
     val raw = new Array[Float](n)
     val wrapped = new SimpleWrappedFloatArray(n)
     val buf = new FloatArrayBuffer(ByteBuffer.allocate(n*4))
+    val directBuf = new FloatArrayBuffer(ByteBuffer.allocateDirect(n*4).order(ByteOrder.nativeOrder()))
     val arrBuf = new FloatArrayAsBuffer(n)
     (0 until n).foreach { idx =>
       raw(idx) = idx * 2.4f
       wrapped(idx) = idx * 2.4f
       buf(idx) = idx * 2.4f
+      directBuf(idx) = idx * 2.4f
       arrBuf(idx) = idx * 2.4f
     }
-    (raw, wrapped, buf, arrBuf)
+    (raw, wrapped, buf, directBuf, arrBuf)
   }
 
   def sequentialProfile(th: Thyme) {
     val n = 1e7.toInt
-    val (rawArray, _, buf, _) = initArrays(n)
+    val (rawArray, _, buf, directBuf, _) = initArrays(n)
     val tsv = new TsvPrinter(th, new File("float_buffer_profile.tsv"))
     //to get accurate timing here, you CANNOT wrap the implementations up in a common trait, b/c then you
     // add the cost of dynamic dispatch, which dwarfs the floating point operations
@@ -124,7 +126,7 @@ object FloatArrayBufferTest {
         idx += 1
       }
       sum
-    }, title="ByteBuffer.getFloat"))
+    }, title="Heap.float"))
     val rawFloatBuf = buf.floatBuffer
     println("result = " + tsv.tsvBench({
       var idx = 0
@@ -134,7 +136,29 @@ object FloatArrayBufferTest {
         idx += 1
       }
       sum
-    }, title="byte[] in FloatBuffer"))
+    }, title="Heap FloatBuf"))
+
+
+    val directRawBB = directBuf.bb
+    println("result = " + tsv.tsvBench({
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += directRawBB.getFloat(idx * 4)
+        idx += 1
+      }
+      sum
+    }, title="Direct.float"))
+    println("result = " + tsv.tsvBench({
+      var idx = 0
+      var sum = 0f
+      while(idx < n) {
+        sum += directBuf(idx)
+        idx += 1
+      }
+      sum
+    }, title="Direct FloatBuf"))
+
 
     tsv.close()
     tsv.showRCommand
