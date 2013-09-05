@@ -2,7 +2,13 @@ import sbt._
 import Keys._
 
 object SparkBuild extends Build {
-  lazy val core = Project("core", file("."), settings = coreSettings)
+
+  lazy val root = Project("root", file("."), settings = rootSettings) aggregate(allProjects: _*)
+  lazy val allProjects = Seq[ProjectReference](
+    core, macros, macrotests)
+
+
+  lazy val core = Project("core", file("core"), settings = coreSettings)
 
   def sharedSettings = Defaults.defaultSettings ++ Seq(
     version := "0.1-SNAPSHOT",
@@ -17,6 +23,8 @@ object SparkBuild extends Build {
       "org.scalatest" % "scalatest_2.10" % "1.9.1" % "test"
     )
   )
+
+  def rootSettings = sharedSettings
 
   val slf4jVersion = "1.6.1"
 
@@ -33,4 +41,17 @@ object SparkBuild extends Build {
     )
   )
 
+  lazy val macros = Project("macros", file("macros"), settings = macrosSettings) dependsOn(core)
+  
+  lazy val macrotests = Project("macrotests", file("macrotests"), settings = macrotestsSettings) dependsOn(macros)
+
+  def macrosSettings = coreSettings ++ Seq(
+    name := "macros",
+    libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
+  )
+
+  def macrotestsSettings = coreSettings ++ Seq(
+    name := "macrotests"
+  )
+  
 }
