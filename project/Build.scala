@@ -32,8 +32,10 @@ object SparkBuild extends Build {
     name := "Oleander",
     resolvers ++= Seq(
       "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
-      "JBoss Repository" at "http://repository.jboss.org/nexus/content/repositories/releases/"
+      "JBoss Repository" at "http://repository.jboss.org/nexus/content/repositories/releases/",
+      Resolver.sonatypeRepo("snapshots")
     ),
+    addCompilerPlugin("org.scala-lang.plugins" % "macro-paradise" % "2.0.0-SNAPSHOT" cross CrossVersion.full),
     libraryDependencies ++= Seq(
       "log4j" % "log4j" % "1.2.16",
       "org.slf4j" % "slf4j-api" % slf4jVersion,

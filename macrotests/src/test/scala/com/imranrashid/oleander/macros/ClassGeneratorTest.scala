@@ -9,14 +9,17 @@ import org.scalatest.matchers.ShouldMatchers
 class ClassGeneratorTest extends FunSuite with ShouldMatchers {
 
 
-  test("macros"){
-    println("blah")
-    ClassGenerator.macroFoo("wakka wakka")
+  test("printlnMacros"){
+    ClassGenerator.printMacro("wakka wakka")
+  }
+
+  test("classDefMacros"){
+    ClassGenerator.classExpandMacro(this)
+
   }
 }
 
 
-trait BasicTrait {
-  def x: Int
-  def y: Float
+class BasicClass {
+  var z = 0
 }
