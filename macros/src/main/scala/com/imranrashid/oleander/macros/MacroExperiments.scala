@@ -5,7 +5,13 @@ import language.experimental.macros
 import reflect.macros.Context
 import scala.annotation.StaticAnnotation
 
-object ClassGenerator {
+
+
+/*
+ hodge podge of stuff I played with to learn macros.  mostly a workbook for pasting into the repl
+ */
+
+object MacroTests {
   def printMacro(s: String) = macro printMacroImpl
 
   def printMacroImpl(c: Context)(s: c.Expr[String]) : c.Expr[Any] = {
