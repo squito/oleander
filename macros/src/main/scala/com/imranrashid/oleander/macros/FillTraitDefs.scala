@@ -34,13 +34,46 @@ object SimpleTraitImpl {
       DefDef(Modifiers(), newTermName("x"), List(), List(), TypeTree(), Literal(Constant(5))),
       DefDef(Modifiers(), newTermName("y"), List(), List(), TypeTree(), Literal(Constant(7.0f)))
     )
-    if(addSuper) ???
-//    val addedTrait = TypeTree().setOriginal(AppliedTypeTree(Select(Select(Ident("java"), "java.util"), "java.util.Map")))
+//    val addedTrait = TypeTree().setOriginal(Select(Select(Ident("com"), "com.imranrashid"), "com.imranrashid.ATrait"))
+//    val addedTrait = TypeTree().setOriginal(Select(Select(Ident("ooga"), "booga"), "Wakka"))
+//    val addedTrait = TypeTree().setOriginal(Ident("TopLevelTrait"))
+//    val addedTrait = Ident(newTypeName("TopLevelTrait"))  // WORKS!!! discovered via -Yshow-trees-compact
+    val addedTrait = Select(Select(Select(
+      Select(Ident(newTermName("com")), newTermName("imranrashid")),
+      newTermName("oleander")),newTermName("macros")),
+      newTypeName("SimpleTrait"))
+    /* doesn't really work.  results in:
+
+
+<console>:44: warning: method Select in trait Trees is deprecated: Use Select(tree, newTermName(name)) instead
+           val addedTrait = TypeTree().setOriginal(Select(Select(Ident("ooga"), "ooga.booga"), "ooga.booga.Wakka"))
+                                                   ^
+<console>:44: warning: method Select in trait Trees is deprecated: Use Select(tree, newTermName(name)) instead
+           val addedTrait = TypeTree().setOriginal(Select(Select(Ident("ooga"), "ooga.booga"), "ooga.booga.Wakka"))
+                                                          ^
+<console>:44: warning: method Ident in trait Trees is deprecated: Use Ident(newTermName(name)) instead
+           val addedTrait = TypeTree().setOriginal(Select(Select(Ident("ooga"), "ooga.booga"), "ooga.booga.Wakka"))
+
+and then
+
+scala> @AddTraitAsSuper class Blarg
+error: object Wakka is not a member of package ooga.booga
+Note: trait Wakka exists, but it has no companion object.
+
+or
+
+scala> @AddTraitAsSuper class Blarg
+<console>:16: error: class type required but TopLevelTrait.type found
+       @AddTraitAsSuper class Blarg
+        ^
+     */
+
     val modDefs = inputs map {tree => tree match {
       case ClassDef(mods, name, something, template) =>
         val q = template match {
           case Template(superMaybe, emptyValDef, defs) =>
-            Template(superMaybe, emptyValDef, defs ++ newDefDefs)
+            val newSuper = if (addSuper) superMaybe ++ List(addedTrait) else superMaybe
+            Template(newSuper, emptyValDef, defs ++ newDefDefs)
           case y =>
             y
         }
