@@ -21,4 +21,23 @@ class SimpleTraitFillInTest extends FunSuite with ShouldMatchers {
     x.x should be (5)
     x.y should be (7.0f)
   }
+
+  test("add trait with quasiquotes"){
+    @QuasiQuoteAddTrait class Ooga {}
+    val z = new Ooga()
+    z.isInstanceOf[SimpleTrait] should be (true)
+    z.x should be (5)
+    z.y should be (7.0f)
+
+    //make sure we keep original defs also
+
+    @QuasiQuoteAddTrait class Wakka {
+      def q = "hi there"
+    }
+    val w = new Wakka()
+    w.x should be (5)
+    w.y should be (7.0f)
+    w.q should be ("hi there")
+
+  }
 }

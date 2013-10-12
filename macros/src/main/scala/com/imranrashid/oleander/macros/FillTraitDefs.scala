@@ -12,6 +12,10 @@ class AddTraitAsSuper extends StaticAnnotation {
   def macroTransform(annottees: Any*) = macro SimpleTraitImpl.addDefsAndTrait
 }
 
+class QuasiQuoteAddTrait extends StaticAnnotation {
+  def macroTransform(annottees: Any*) = macro SimpleTraitImpl.quasiQuotesImpl
+}
+
 trait SimpleTrait {
   def x: Int
   def y: Float
@@ -83,5 +87,25 @@ scala> @AddTraitAsSuper class Blarg
     }}
     val result = c.Expr(Block(modDefs, Literal(Constant())))
     result
+  }
+
+  def quasiQuotesImpl(c: Context)(annottees: c.Expr[Any]*): c.Expr[Any] = {
+    import c.universe._
+    val inputs = annottees.map(_.tree).toList
+
+    val newDefs: List[Tree] = List(
+      q"def x = 5",
+      q"def y = 7.0f"
+    )
+
+    val modDefs = inputs map {tree => tree match {
+      case q"class $name extends scala.AnyRef { ..$body }"=>
+        val tbody = body.asInstanceOf[List[Tree]]
+
+        q"class $name extends com.imranrashid.oleander.macros.SimpleTrait { ..${(newDefs ++ tbody).toList} }"
+      case x =>
+        x
+    }}
+    c.Expr(Block(modDefs, Literal(Constant())))
   }
 }
