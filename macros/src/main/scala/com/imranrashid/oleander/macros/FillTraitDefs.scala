@@ -99,10 +99,12 @@ scala> @AddTraitAsSuper class Blarg
     )
 
     val modDefs = inputs map {tree => tree match {
-      case q"class $name extends scala.AnyRef { ..$body }"=>
+      case q"class $name extends $parent with ..$traits { ..$body }"=>
         val tbody = body.asInstanceOf[List[Tree]]
-
-        q"class $name extends com.imranrashid.oleander.macros.SimpleTrait { ..${(newDefs ++ tbody).toList} }"
+        val ttraits = traits.asInstanceOf[List[Tree]]
+        val q"class $ignore extends $addedType" = q"class Foo extends com.imranrashid.oleander.macros.SimpleTrait"
+        val addedTypeList : List[Tree] = List(addedType)
+        q"class $name extends $parent with ..${(ttraits ++ addedTypeList).toList} { ..${(newDefs ++ tbody).toList} }"
       case x =>
         x
     }}
