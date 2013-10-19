@@ -30,14 +30,14 @@ object MacroTests {
   def printTree(stuff: Any) = macro printTreeImpl
 
 
-  def valDefImpl(c: Context)(ignore: c.Expr[Any]): c.Expr[Unit] = {
+  def valDefImpl(c: Context)(ignore: c.Expr[Any]): c.Expr[Any] = {
     import c.universe._
     val valName = c.fresh("blah")
     println("valName = " + valName)
-    reify{c.Expr[Unit](Block(List(ValDef(Modifiers(), valName, TypeTree(), Literal(Constant(17)))), Literal(Constant()))).splice}
+    c.Expr[Block](Block(List(ValDef(Modifiers(), valName, TypeTree(), Literal(Constant(17)))), Literal(Constant())))
   }
 
-  def valDef(ignore: Any): Unit = macro valDefImpl
+  def valDef(ignore: Any): Any = macro valDefImpl
 
 
   def valDefQuasiImpl(c: Context)(ignore: c.Expr[Any]): c.Expr[Any] = {
