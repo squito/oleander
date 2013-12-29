@@ -79,6 +79,7 @@ object SimpleTraitImpl {
     import c.universe._
     val inputs = annottees.map(_.tree).toList
 
+    //you need to put the type in explicitly here with quasiquotes
     val newDefs: List[Tree] = List(
       q"def x = 5",
       q"def y = 7.0f"
@@ -86,10 +87,12 @@ object SimpleTraitImpl {
 
     val modDefs = inputs map {tree => tree match {
       case q"class $name extends $parent with ..$traits { ..$body }"=>
+        //again, explicit types everywhere with quasiquotes
         val tbody = body.asInstanceOf[List[Tree]]
         val ttraits = traits.asInstanceOf[List[Tree]]
         val q"class $ignore extends $addedType" = q"class Foo extends com.imranrashid.oleander.macros.SimpleTrait"
         val addedTypeList : List[Tree] = List(addedType)
+        // and after merging lists together, we need to call .toList again
         q"class $name extends $parent with ..${(ttraits ++ addedTypeList).toList} { ..${(newDefs ++ tbody).toList} }"
       case x =>
         x
