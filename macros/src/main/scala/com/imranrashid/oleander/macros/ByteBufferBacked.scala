@@ -32,22 +32,30 @@ object ByteBufferBackedImpl {
     //so go through the fields, and assign each a position offset by 4 bytes.
     val (numBytes,methodToPosition) = getFieldToOffset(c)(targetMethods)
 
-    val newMethods = if (includeSetters) {
+    val newMethods = (if (includeSetters) {
       getters(c)(methodToPosition) ++ setters(c)(methodToPosition)
     } else {
       getters(c)(methodToPosition)
+    }) ++ {
+      List(
+        q"def numBytes = $numBytes",
+        q"""def setBuffer(b: ByteBuffer, p: Int) {
+            bb = b
+            position = p
+          }"""
+      )
     }
 
     //TODO DRY this part up, I use it a lot -- lots of boilerplate to add more methods & a trait
     val modDefs = annottees.map(_.tree).toList map {tree => tree match {
-      case q"class $name($constructor) extends $parent with ..$traits { ..$body }"=>
+      case q"class $name(..$constructorParams) extends $parent with ..$traits { ..$body }"=>
         //TODO I really need to check the constructor is what I expect ...
         //again, explicit types everywhere with quasiquotes
         val tbody = body.asInstanceOf[List[Tree]]
         val ttraits = traits.asInstanceOf[List[Tree]]
         val addedTypeList : List[Tree] = List(targetTrait)
         // and after merging lists together, we need to call .toList again
-        q"class $name($constructor) extends $parent with ..${(ttraits ++ addedTypeList).toList} { ..${(newMethods ++ tbody).toList} }"
+        q"class $name(..$constructorParams) extends $parent with ..${(ttraits ++ addedTypeList).toList} { ..${(newMethods ++ tbody).toList} }"
       case x =>
         c.abort(tree.pos, "unexpected annottee: " + tree)
     }}
@@ -68,9 +76,9 @@ object ByteBufferBackedImpl {
       val name = stringToTermName(m.name.toString)
       m match {
         case intMethod if intMethod.returnType =:= typeOf[Int] =>
-          q"def $name = bb.getInt($p)"
+          q"def $name = bb.getInt($p + position)"
         case floatMethod if floatMethod.returnType =:= typeOf[Float] =>
-          q"def $name = bb.getFloat($p)"
+          q"def $name = bb.getFloat($p + position)"
       }
     }.toList
   }
@@ -81,9 +89,9 @@ object ByteBufferBackedImpl {
       val name = stringToTermName(m.name.toString + "_$eq")
       m match {
         case intMethod if intMethod.returnType =:= typeOf[Int] =>
-          q"def $name(v:Int) = bb.putInt($p, v)"
+          q"def $name(v:Int) = bb.putInt($p + position, v)"
         case floatMethod if floatMethod.returnType =:= typeOf[Float] =>
-          q"def $name(v:Float) = bb.putFloat($p, v)"
+          q"def $name(v:Float) = bb.putFloat($p + position, v)"
       }
     }.toList
   }
