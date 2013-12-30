@@ -3,6 +3,7 @@ package com.imranrashid.oleander.macros
 import scala.language.experimental.macros
 import scala.reflect.macros.Context
 import scala.annotation.StaticAnnotation
+import com.imranrashid.oleander.BB2
 
 class ByteBufferBacked[T] extends StaticAnnotation {
   def macroTransform(annottees: Any*) = macro ByteBufferBackedImpl.immutable
@@ -46,6 +47,8 @@ object ByteBufferBackedImpl {
       )
     }
 
+    val q"class $ignore extends $bb2" = q"class foo extends com.imranrashid.oleander.BB2"
+
     //TODO DRY this part up, I use it a lot -- lots of boilerplate to add more methods & a trait
     val modDefs = annottees.map(_.tree).toList map {tree => tree match {
       case q"class $name(..$constructorParams) extends $parent with ..$traits { ..$body }"=>
@@ -53,7 +56,7 @@ object ByteBufferBackedImpl {
         //again, explicit types everywhere with quasiquotes
         val tbody = body.asInstanceOf[List[Tree]]
         val ttraits = traits.asInstanceOf[List[Tree]]
-        val addedTypeList : List[Tree] = List(targetTrait)
+        val addedTypeList : List[Tree] = List(targetTrait, bb2)
         // and after merging lists together, we need to call .toList again
         q"class $name(..$constructorParams) extends $parent with ..${(ttraits ++ addedTypeList).toList} { ..${(newMethods ++ tbody).toList} }"
       case x =>
