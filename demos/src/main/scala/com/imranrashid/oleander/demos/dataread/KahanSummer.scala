@@ -5,8 +5,6 @@ import java.nio.ByteBuffer
 
 /* Note that in practice, it makes more sense to just use doubles, but this is just an example
  */
-
-
 trait KahanSummerData {
   def sum: Float
   def sum_=(f: Float)
@@ -18,8 +16,8 @@ trait KahanSummer {
   self: KahanSummerData =>
 
   def +=(v: Float) {
-    var y = v - c
-    var t = sum + y
+    val y = v - c
+    val t = sum + y
     c = (t - sum) - y
     sum = t
   }
