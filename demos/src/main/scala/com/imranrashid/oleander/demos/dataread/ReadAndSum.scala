@@ -5,6 +5,7 @@ import java.io.{RandomAccessFile, File}
 import com.imranrashid.oleander.BB2Itr
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel.MapMode
+import java.util.Date
 
 /**
  *
@@ -12,15 +13,20 @@ import java.nio.channels.FileChannel.MapMode
 object ReadAndSum extends ArgMain[ReadAndSumArgs] {
   def main(args: ReadAndSumArgs) {
     val (bb,itr) = time("load"){loadData(args)}
-    ptime("regular")(regularSum(args, itr))
+    //all the variants which use an iterator over the data are much slower.  the closure really slows things down
     ptime("regular")(regularSum(args, itr))
     ptime("bb kahan")(bbKahanSum(args, itr))
     ptime("pojo kahan")(pojoKahanSum(args, itr))
     ptime("bb kahan")(bbKahanSum(args, itr))
+
+    //direct iteration is about 8x faster
     fastRegularSum(args)
     fastBBKahanSum(args)
     fastPOJOKahanSum(args)
 
+    fastRegularPojoSum(args) //copying data into pojos is slow, but then the sum is really fast
+
+    //closures over a range are also fast, b/c of a compiler optimization
     ptime("range regular"){rangeRegularSum(args, bb)}
   }
 
@@ -103,6 +109,41 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
     println()
   }
 
+  def fastRegularPojoSum(args: ReadAndSumArgs) {
+    val (mbb, maxBytes) = BB2Itr.mmap(args.inputFile, load = true)
+    val t = BB2Itr.makeBB2[DataPointIm](mbb)
+    val n = maxBytes.toInt / t.numBytes
+    println("allocating space for " + n + " pojos")
+    val pojoData = new Array[DataPointPOJO](n)
+    println("array allocated")
+    val u = n / 100
+    time("copy to pojos"){
+      var p = 0
+      var idx = 0
+      while( p < maxBytes) {
+        t.setBuffer(mbb, p)
+        pojoData(idx) = new DataPointPOJO(t.bucket, t.value)
+        p += 8
+        idx += 1
+        if (idx % u == 0) {
+          println(new Date() + "\t" + idx + s"(${idx / u})")
+        }
+      }
+    }
+
+    ptime("fast regular pojo sum"){
+      //now we've copied all the data into POJOs ... lets do our sums
+      val bucketSums = new Array[Float](args.nBuckets)
+      var idx = 0
+      while (idx < n) {
+        val p = pojoData(idx)
+        bucketSums(p.bucket) += p.value
+        idx += 1
+      }
+      bucketSums(0)
+    }
+  }
+
 
   def fastBBKahanSum(args: ReadAndSumArgs) {
     val bbsum = ByteBuffer.allocate(args.nBuckets * 8)
@@ -121,6 +162,28 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
     println("result = " + sums(0).sum)
     println()
   }
+
+  def fasterBBKahanSum(args: ReadAndSumArgs) {
+    val bbsum = ByteBuffer.allocate(args.nBuckets * 8)
+    val sums = BB2Itr.indexedBB2[BBKahanSummer](bbsum)
+    val sumB = sums.t
+    val (mbb, maxBytes) = BB2Itr.mmap(args.inputFile, load = true)
+    val t = BB2Itr.makeBB2[DataPointIm](mbb)
+    val start = System.nanoTime()
+    var p = 0
+    while( p < maxBytes) {
+      t.setBuffer(mbb, p)
+      // lets skip the apply, see if its faster ...
+      sumB.setBuffer(bbsum, t.bucket * 8)
+      sumB += t.value
+      p += 8
+    }
+    val end = System.nanoTime()
+    println("fast bb kahan sum\t" + ((end - start).toDouble / 1e9))
+    println("result = " + sums(0).sum)
+    println()
+  }
+
 
 
   def fastPOJOKahanSum(args: ReadAndSumArgs) {

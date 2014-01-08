@@ -73,10 +73,10 @@ object BB2Itr {
 
 }
 
-class IndexedBb2[T <: BB2](bb: ByteBuffer, start: Int, length: Int, o: T) {
+class IndexedBb2[T <: BB2](bb: ByteBuffer, start: Int, length: Int, val t: T) {
 
   def apply(idx: Int): T = {
-    o.setBuffer(bb, start + idx * o.numBytes)
-    o
+    t.setBuffer(bb, start + idx * t.numBytes)
+    t
   }
 }

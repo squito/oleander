@@ -43,6 +43,7 @@ trait DataPoint {
 @ByteBufferBacked[DataPoint] class DataPointIm(var bb: ByteBuffer, var position: Int)
 @MutableByteBufferBacked[DataPoint] class DataPointMut(var bb: ByteBuffer, var position: Int)
 
+class DataPointPOJO(val bucket: Int, val value: Float) extends DataPoint
 
 object EchoData extends ArgMain[EchoDataArgs] {
   def main(args: EchoDataArgs) {
