@@ -5,10 +5,12 @@ object SparkBuild extends Build {
 
   lazy val root = Project("root", file("."), settings = rootSettings) aggregate(allProjects: _*)
   lazy val allProjects = Seq[ProjectReference](
-    core, macros, macrotests, demos)
+    api, core, macros, macrotests, demos)
 
 
-  lazy val core = Project("core", file("core"), settings = coreSettings)
+  lazy val api = Project("api", file("api"), settings = apiSettings)
+  lazy val core = Project("core", file("core"), settings = coreSettings).
+    dependsOn(api)
 
   def sharedSettings = Defaults.defaultSettings ++ Seq(
     version := "0.1-SNAPSHOT",
@@ -28,15 +30,18 @@ object SparkBuild extends Build {
 
   val slf4jVersion = "1.6.1"
 
+  def apiSettings = sharedSettings ++ Seq(
+    name := "oleander-api"
+  )
+
   def coreSettings = sharedSettings ++ Seq(
-    name := "Oleander",
+    name := "oleander-core",
     resolvers ++= Seq(
       "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releases/",
       "JBoss Repository" at "http://repository.jboss.org/nexus/content/repositories/releases/",
       Resolver.sonatypeRepo("snapshots"),
       "Quantifind External Snapshots" at "http://repo.quantifind.com/content/repositories/ext-snapshots/"
     ),
-    addCompilerPlugin("org.scala-lang.plugins" % "macro-paradise" % "2.0.0-SNAPSHOT" cross CrossVersion.full),
     libraryDependencies ++= Seq(
       "log4j" % "log4j" % "1.2.16",
       "org.slf4j" % "slf4j-api" % slf4jVersion,
@@ -52,21 +57,25 @@ object SparkBuild extends Build {
 
   def macrosSettings = coreSettings ++ Seq(
     name := "macros",
+    addCompilerPlugin("org.scala-lang.plugins" % "macro-paradise" % "2.0.0-SNAPSHOT" cross CrossVersion.full),
     libraryDependencies <+= (scalaVersion)("org.scala-lang" % "scala-compiler" % _)
   )
 
   def macrotestsSettings = coreSettings ++ Seq(
-    name := "macrotests"
+    name := "macrotests",
+    addCompilerPlugin("org.scala-lang.plugins" % "macro-paradise" % "2.0.0-SNAPSHOT" cross CrossVersion.full)
   )
   
-  def demoSettings = coreSettings ++ Seq(
+  def demoSettings = coreSettings ++ Seq(                                                                    
     name := "demos",
+    addCompilerPlugin("org.scala-lang.plugins" % "macro-paradise" %
+      "2.0.0-SNAPSHOT" cross CrossVersion.full),
     libraryDependencies ++= Seq(
       // Serialization stuff
       "com.twitter" % "chill-bijection_2.10" % "0.3.3",
       "org.xerial.snappy" % "snappy-java" % "1.1.0-M3",
-      //we really need to release sumac 0.2 so this can reference a normal release ...
-      "com.quantifind" % "sumac_2.10" % "0.2.7023969-SNAPSHOT"
+      //arg parser
+      "com.quantifind" % "sumac_2.10" % "0.2.3"
     )
   )
   

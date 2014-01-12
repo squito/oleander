@@ -2,7 +2,7 @@ package com.imranrashid.oleander.demos.dataread
 
 import com.quantifind.sumac.{ArgMain, FieldArgs}
 import java.io.{RandomAccessFile, File}
-import com.imranrashid.oleander.BB2Itr
+import com.imranrashid.oleander.ByteBufferBackedItr
 import java.nio.ByteBuffer
 import java.nio.channels.FileChannel.MapMode
 import java.util.Date
@@ -31,8 +31,8 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
   }
 
   def loadData(args: ReadAndSumArgs) = {
-    val (bb, _) = BB2Itr.mmap(args.inputFile, load = true)
-    val itr = BB2Itr.byteBufferToIterable[DataPointIm](bb)
+    val (bb, _) = ByteBufferBackedItr.mmap(args.inputFile, load = true)
+    val itr = ByteBufferBackedItr.byteBufferToIterable[DataPointIm](bb)
     (bb, itr)
   }
 
@@ -60,7 +60,7 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
 
   def rangeRegularSum(args: ReadAndSumArgs, data: ByteBuffer): Float = {
     val bucketSums = new Array[Float](args.nBuckets)
-    val (dp, range) = BB2Itr.bbWithRange[DataPointIm](data)
+    val (dp, range) = ByteBufferBackedItr.bbWithRange[DataPointIm](data)
     range.foreach{pos =>
       dp.setBuffer(data, pos)
       bucketSums(dp.bucket) += dp.value
@@ -71,7 +71,7 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
 
   def bbKahanSum(args: ReadAndSumArgs, data: Traversable[DataPointIm]): Float =  {
     val bbsum = ByteBuffer.allocate(args.nBuckets * 8)
-    val sums = BB2Itr.indexedBB2[BBKahanSummer](bbsum)
+    val sums = ByteBufferBackedItr.indexedByteBufferBacked[BBKahanSummer](bbsum)
     data.foreach{dp =>
       sums(dp.bucket) += dp.value
     }
@@ -95,7 +95,7 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
     val maxBytes = file.length
     val mbb = fc.map(MapMode.READ_WRITE, 0, maxBytes)
     mbb.load()
-    val t = BB2Itr.makeBB2[DataPointIm](mbb)
+    val t = ByteBufferBackedItr.makeByteBufferBacked[DataPointIm](mbb)
     val start = System.nanoTime()
     var p = 0
     while( p < maxBytes) {
@@ -110,8 +110,8 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
   }
 
   def fastRegularPojoSum(args: ReadAndSumArgs) {
-    val (mbb, maxBytes) = BB2Itr.mmap(args.inputFile, load = true)
-    val t = BB2Itr.makeBB2[DataPointIm](mbb)
+    val (mbb, maxBytes) = ByteBufferBackedItr.mmap(args.inputFile, load = true)
+    val t = ByteBufferBackedItr.makeByteBufferBacked[DataPointIm](mbb)
     val n = maxBytes.toInt / t.numBytes
     println("allocating space for " + n + " pojos")
     val pojoData = new Array[DataPointPOJO](n)
@@ -147,9 +147,9 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
 
   def fastBBKahanSum(args: ReadAndSumArgs) {
     val bbsum = ByteBuffer.allocate(args.nBuckets * 8)
-    val sums = BB2Itr.indexedBB2[BBKahanSummer](bbsum)
-    val (mbb, maxBytes) = BB2Itr.mmap(args.inputFile, load = true)
-    val t = BB2Itr.makeBB2[DataPointIm](mbb)
+    val sums = ByteBufferBackedItr.indexedByteBufferBacked[BBKahanSummer](bbsum)
+    val (mbb, maxBytes) = ByteBufferBackedItr.mmap(args.inputFile, load = true)
+    val t = ByteBufferBackedItr.makeByteBufferBacked[DataPointIm](mbb)
     val start = System.nanoTime()
     var p = 0
     while( p < maxBytes) {
@@ -165,10 +165,10 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
 
   def fasterBBKahanSum(args: ReadAndSumArgs) {
     val bbsum = ByteBuffer.allocate(args.nBuckets * 8)
-    val sums = BB2Itr.indexedBB2[BBKahanSummer](bbsum)
+    val sums = ByteBufferBackedItr.indexedByteBufferBacked[BBKahanSummer](bbsum)
     val sumB = sums.t
-    val (mbb, maxBytes) = BB2Itr.mmap(args.inputFile, load = true)
-    val t = BB2Itr.makeBB2[DataPointIm](mbb)
+    val (mbb, maxBytes) = ByteBufferBackedItr.mmap(args.inputFile, load = true)
+    val t = ByteBufferBackedItr.makeByteBufferBacked[DataPointIm](mbb)
     val start = System.nanoTime()
     var p = 0
     while( p < maxBytes) {
@@ -189,8 +189,8 @@ object ReadAndSum extends ArgMain[ReadAndSumArgs] {
   def fastPOJOKahanSum(args: ReadAndSumArgs) {
     val sums = new Array[POJOKahanSummer](args.nBuckets)
     (0 until args.nBuckets).foreach{idx => sums(idx) = new POJOKahanSummer}
-    val (mbb, maxBytes) = BB2Itr.mmap(args.inputFile, load = true)
-    val t = BB2Itr.makeBB2[DataPointIm](mbb)
+    val (mbb, maxBytes) = ByteBufferBackedItr.mmap(args.inputFile, load = true)
+    val t = ByteBufferBackedItr.makeByteBufferBacked[DataPointIm](mbb)
     val start = System.nanoTime()
     var p = 0
     while( p < maxBytes) {

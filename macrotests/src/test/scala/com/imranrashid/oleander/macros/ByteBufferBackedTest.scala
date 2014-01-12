@@ -5,7 +5,7 @@ import java.nio.ByteBuffer
 
 class ByteBufferBackedTest extends FunSuite with Matchers {
   test("immutable") {
-    @ByteBufferBacked[BBTest] class Blah(var bb: ByteBuffer, var position: Int = 0)
+    @BBMac[BBTest] class Blah(var bb: ByteBuffer, var position: Int = 0)
     val bb = ByteBuffer.allocate(80)
     val b = new Blah(bb)
     bb.putInt(7)
@@ -24,7 +24,7 @@ class ByteBufferBackedTest extends FunSuite with Matchers {
   }
 
   test("mutable") {
-    @MutableByteBufferBacked[BBTest] class Foo(var bb: ByteBuffer, var position: Int = 0)
+    @MutableBBMac[BBTest] class Foo(var bb: ByteBuffer, var position: Int = 0)
     val bb = ByteBuffer.allocate(80)
     val b = new Foo(bb)
     b.x = 19

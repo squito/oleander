@@ -13,9 +13,14 @@ import java.nio.ByteBuffer
  */
 class FloatArrayBuffer(var bb: ByteBuffer) extends ByteBufferBacked with ArrayLike[Float] {
   var floatBuffer = bb.asFloatBuffer()
-  override def initFrom(otherBB: ByteBuffer) {this.bb = otherBB}
-  override def asByteBuffer(): ByteBuffer = {bb}
+  def setBuffer(bb: ByteBuffer, pos: Int) {
+    //TODO handle non-zero pos
+    require(pos == 0)
+    this.bb = bb
+    floatBuffer = bb.asFloatBuffer()
+  }
   def apply(idx: Int): Float = floatBuffer.get(idx)
   def update(idx: Int, v: Float) {floatBuffer.put(idx, v)}
   def length = floatBuffer.limit
+  def numBytes = 4
 }

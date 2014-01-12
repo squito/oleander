@@ -13,9 +13,13 @@ import java.nio.ByteBuffer
  */
 class IntArrayBuffer(var bb: ByteBuffer) extends ByteBufferBacked with ArrayLike[Int] {
   var intBuffer = bb.asIntBuffer()
-  override def initFrom(otherBB: ByteBuffer) {this.bb = otherBB}
-  override def asByteBuffer(): ByteBuffer = {bb}
+  def setBuffer(bb: ByteBuffer, pos: Int) {
+    require(pos == 0) //TODO
+    this.bb = bb
+    intBuffer = bb.asIntBuffer()
+  }
   def apply(idx: Int): Int = intBuffer.get(idx)
   def update(idx: Int, v: Int) {intBuffer.put(idx, v)}
   def length = intBuffer.limit
+  def numBytes = 4
 }

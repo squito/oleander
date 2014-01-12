@@ -4,7 +4,8 @@ import com.quantifind.sumac.{ArgMain, FieldArgs}
 import java.io.{RandomAccessFile, File}
 import java.nio.{ByteBuffer, MappedByteBuffer}
 import java.nio.channels.FileChannel.MapMode
-import com.imranrashid.oleander.macros.{MutableByteBufferBacked, ByteBufferBacked}
+import com.imranrashid.oleander.macros.{MutableBBMac, BBMac}
+import com.imranrashid.oleander._
 import scala.util.Random
 import com.quantifind.sumac.validation.Required
 
@@ -40,8 +41,8 @@ trait DataPoint {
   def value: Float
 }
 
-@ByteBufferBacked[DataPoint] class DataPointIm(var bb: ByteBuffer, var position: Int)
-@MutableByteBufferBacked[DataPoint] class DataPointMut(var bb: ByteBuffer, var position: Int)
+@BBMac[DataPoint] class DataPointIm(var bb: ByteBuffer, var position: Int)
+@MutableBBMac[DataPoint] class DataPointMut(var bb: ByteBuffer, var position: Int)
 
 class DataPointPOJO(val bucket: Int, val value: Float) extends DataPoint
 
